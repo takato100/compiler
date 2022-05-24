@@ -19,10 +19,20 @@ class Lexer
       end
     end
 
+
     case @line
+    when /\Aint/
+      yield $&
+      token = :int
+    when /\Astring/
+      yield $&
+      token = :string
     when /\A\d+/
       yield $&
-        token = :num
+      token = :num
+    when /\A=/
+      yield $&
+      token = :eq
     when /\A\+/
       yield $&
       token = :plus
@@ -32,6 +42,21 @@ class Lexer
     when /\A\(/
       yield $&
       token = :lpar
+    when /\A\)/
+      yield $&
+      token = :rpar
+    when /\A\{/
+      yield $&
+      token = :lbrace
+    when /\A\}/
+      yield $&
+      token = :rbrace
+    when /\A"\w*"/
+      yield $&
+      token = :lstring
+    when /\A\;/
+      yield $&
+      token = :semi
     when /\A\)/
       yield $&
       token = :rpar
