@@ -4,12 +4,9 @@ class Lexer
   def initialize(f)
     @srcf = f
     @line = ""
-    @lineno = 1
   end
 
   def lex()
-
-    # delete spaces for the "empty?"
     if /\A\s+/ =~ @line
       @line = $'
     end
@@ -17,64 +14,57 @@ class Lexer
     while @line.empty? do
       @line = @srcf.gets
       if @line == nil
-        return false
+        return :eof
       end
-      @line = @line.chomp
-      @lineno += 1
+      if /\A\s+/ =~ @line
+        @line = $'
+      end
     end
-
-    # ignore the free begining space
-    if /\A\s+/ =~ @line
-      @line = $'
-      @line = @line.chomp
-    end
-
 
 
     case @line
-    # \b = words border
-    when /\Aint\b/
-      yield($&, @lineno)
+    when /\Aint/
+      yield $&
       token = :int
-    when /\Astring\b/
-      yield($&, @lineno)
+    when /\Astring/
+      yield $&
       token = :string
     when /\A\d+/
-      yield($&, @lineno)
+      yield $&
       token = :num
     when /\A=/
-      yield($&, @lineno)
+      yield $&
       token = :eq
     when /\A\+/
-      yield($&, @lineno)
+      yield $&
       token = :plus
     when /\A\*/
-      yield($&, @lineno)
+      yield $&
       token = :mult
     when /\A\(/
-      yield($&, @lineno)
+      yield $&
       token = :lpar
     when /\A\)/
-      yield($&, @lineno)
+      yield $&
       token = :rpar
     when /\A\{/
-      yield($&, @lineno)
+      yield $&
       token = :lbrace
     when /\A\}/
-      yield($&, @lineno)
+      yield $&
       token = :rbrace
-    when /\A[a-zA-Z_]\w*/
-      yield($&, @lineno)
+    when /\A[a-zA-Z]\w*/
+      yield $&
       token = :id
     when /\A"\w*"/
-      yield($&, @lineno)
+      yield $&
       token = :lstring
     when /\A\;/
-      yield($&, @lineno)
+      yield $&
       token = :semi
-    when /\A\n/
-      yield($&, @lineno)
-      token = :line
+    when /\A\S/
+      #ignore
+      token = :other
     end
     @line = $'
     return token

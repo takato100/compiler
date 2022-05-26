@@ -1,10 +1,12 @@
 #! /usr/bin/env ruby
 
 require './lexer'
+require './symbol_table'
  
 class Parser
   def initialize(lexer)
     @lexer = lexer
+    @symTable = STM.new()
     @lineno = 0
     # token type
     @token = lexer.lex() { |l, no|
@@ -40,11 +42,18 @@ class Parser
       when :lpar
         getAndCheckToken("mF", :lpar)
         mE()
-        getAndCheckToken("f", :rpar)
+        getAndCheckToken("mF", :rpar)
       when :num
         @lexime.to_i
         getAndCheckToken("mF", :num)
       when :id
+
+        expectedType = @symTable.searchAll(@lexime)
+        if expectedType == nil
+          puts "error: #{@lexime} is not decleared (mF)"
+          exit
+        end
+
         getAndCheckToken("mF", :id)
       else
         errormsg("mF", @token, :lpar, :rpar, :num, :id)
@@ -68,11 +77,23 @@ class Parser
       end
     end
 
-    def rhs()
+    def rhs(lhtype, name)
       case @token
+      # Tint
       when :id, :num, :lpar
+        if lhtype != STM::Tint
+          puts "type error: lh(#{lhtype}, \"#{name}\") "+
+            "rh(:int)"
+          exit
+        end
         mE()
+      # string
       when  :lstring
+        if lhtype != STM::Tstring
+          puts "type error: lh(#{lhtype}, \"#{name}\") "+
+            "rh(:string, \"#{@lexime}\")"
+          exit
+        end
         getAndCheckToken("rhs", :lstring)
       else
         errormsg("rhs", @token, :id, :num, :lpar, :lstring)
@@ -82,9 +103,15 @@ class Parser
     def assign()
       case @token
       when :id
+        lhtype = @symTable.searchAll(@lexime)
+        lhname = @lexime
+        if lhtype == nil
+          puts "error : id(#{@lexime}) not decleared (rhs)"
+          exit
+        end
         getAndCheckToken("assign", :id)
         getAndCheckToken("assign", :eq)
-        rhs()
+        rhs(lhtype, lhname)
         getAndCheckToken("assign", :semi)
       else
         errormsg("assign", :id)
@@ -103,6 +130,7 @@ class Parser
     end
 
     def usePart()
+      statement()
       while @token == :id || @token == :lbrace
         statement()
       end
@@ -112,17 +140,24 @@ class Parser
       case @token
       when :int
         getAndCheckToken("decl", :int)
+        lexime = @lexime
+        getAndCheckToken("decl", :id)
+        getAndCheckToken("decl", :semi)
+        @symTable.enterId(lexime, STM::Tint)
       when :string
         getAndCheckToken("decl", :string)
+        lexime = @lexime
+        getAndCheckToken("decl", :id)
+        getAndCheckToken("decl", :semi)
+        @symTable.enterId(lexime, STM::Tstring)
       else
         errormsg("decl", @token, :int, :string)
       end
-      getAndCheckToken("decl", :id)
-      getAndCheckToken("decl", :semi)
 
     end
 
     def declPart()
+      decl()
       while @token == :int || @token == :string
         decl()
       end
@@ -132,10 +167,12 @@ class Parser
       if @token != :lbrace
         errormsg("block", @token, :lbrace)
       else
+        @symTable.enterBlock()
         getAndCheckToken("block", :lbrace)
         declPart()
         usePart()
         getAndCheckToken("block", :rbrace)
+        @symTable.leaveBlock()
       end
     end
 
