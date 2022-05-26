@@ -1,42 +1,39 @@
- require '/.lexer'
+#! /usr/bin/env ruby
 
-
+require './lexer'
+ 
 class Parser
-  def initializer(lexer)
+  def initialize(lexer)
     @lexer = lexer
+    @lineno = 0
     # token type
-    @token = lexer.lex() { |l|
+    @token = lexer.lex() { |l, no|
       # token symbol
       @lexime = l
+      @lineno = no
     }
   end
 
-  def parse()
-    mE()
-  end
-
-
-  private
-
-
-    def errormsg(rulename, token, expected*)
+    def errormsg(rulename, token, *expected)
       exs = expected.join(" or ")
-      puts "syntax error (#{rule}, #{token}) : #{exs}  is expected"
+      puts "syntax error (no#{@lineno} rule: #{rulename}, token: #{@lexime}\(#{token}\)) : #{exs}  is expected"
     end
 
     def getAndCheckToken(rulename, expected)
       # check the equality of holding token and expected
       # get next token
-      if @token == expected
-        @token = @lexer.lex(){ |l|
+      case @token
+      when expected
+        @token = @lexer.lex(){ |l, no|
           @lexime = l
+          @lineno = no
         }
       else
         errormsg(rulename, @token, expected)
         exit(1)
       end
     end
-
+    
 
     def mF()
       case @token
@@ -73,9 +70,8 @@ class Parser
 
     def rhs()
       case @token
-      when  :id, :num, :lpar
+      when :id, :num, :lpar
         mE()
-        getAndCheckToken("rhs", :semi)
       when  :lstring
         getAndCheckToken("rhs", :lstring)
       else
@@ -84,7 +80,8 @@ class Parser
     end
 
     def assign()
-      case @token :id
+      case @token
+      when :id
         getAndCheckToken("assign", :id)
         getAndCheckToken("assign", :eq)
         rhs()
@@ -106,9 +103,8 @@ class Parser
     end
 
     def usePart()
-      statement()
       while @token == :id || @token == :lbrace
-        st()
+        statement()
       end
     end
 
@@ -123,11 +119,11 @@ class Parser
       end
       getAndCheckToken("decl", :id)
       getAndCheckToken("decl", :semi)
+
     end
 
     def declPart()
-      decl()
-      while @token == :id || @token == :string
+      while @token == :int || @token == :string
         decl()
       end
     end
@@ -150,9 +146,10 @@ class Parser
     def parse()
       program()
     end
+end
 
 
 
 lexer = Lexer.new($stdin)
 parser = Parser.new(lexer)
-puts purser.parse
+parser.parse

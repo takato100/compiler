@@ -1,68 +1,78 @@
+#! /usr/bin/env ruby
+#
 class Lexer
   def initialize(f)
     @srcf = f
     @line = ""
+    @lineno = 1
   end
 
   def lex()
-    if /\A\s+/ =~ line
+
+    # delete spaces for the "empty?"
+    if /\A\s+/ =~ @line
       @line = $'
     end
 
     while @line.empty? do
       @line = @srcf.gets
       if @line == nil
-        return :eof
+        return false
       end
-      if /\A\s+/ =~ @line
-        @line = $'
-      end
+      @line = @line.chomp
+      @lineno += 1
     end
+
+    # ignore the free begining space
+    if /\A\s+/ =~ @line
+      @line = $'
+    end
+
 
 
     case @line
     when /\Aint/
-      yield $&
+      yield($&, @lineno)
       token = :int
     when /\Astring/
-      yield $&
+      yield($&, @lineno)
       token = :string
     when /\A\d+/
-      yield $&
+      yield($&, @lineno)
       token = :num
     when /\A=/
-      yield $&
+      yield($&, @lineno)
       token = :eq
     when /\A\+/
-      yield $&
+      yield($&, @lineno)
       token = :plus
     when /\A\*/
-      yield $&
+      yield($&, @lineno)
       token = :mult
     when /\A\(/
-      yield $&
+      yield($&, @lineno)
       token = :lpar
     when /\A\)/
-      yield $&
+      yield($&, @lineno)
       token = :rpar
     when /\A\{/
-      yield $&
+      yield($&, @lineno)
       token = :lbrace
     when /\A\}/
-      yield $&
+      yield($&, @lineno)
       token = :rbrace
+    when /\A[a-zA-Z_]\w*/
+      yield($&, @lineno)
+      token = :id
     when /\A"\w*"/
-      yield $&
+      yield($&, @lineno)
       token = :lstring
     when /\A\;/
-      yield $&
+      yield($&, @lineno)
       token = :semi
-    when /\A\)/
-      yield $&
-      token = :rpar
-    when /\A\S/
-      #ignore
-      token = :other
+    when /\A\n/
+      yield($&, @lineno)
+      token = :line
     end
     @line = $'
     return token

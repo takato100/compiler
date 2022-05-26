@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   int a;
   int b;
@@ -8,4 +9,37 @@
   c=a+b;
   e="stringaa";
 
+=======
+{ 
+int 
+a
+;
+string
+moji
+;
+int
+c
+;
+a
+=
+5
+;
+{
+int
+b
+;
+b
+=
+10
+;
+}
+c
+=
+1
++
+2
+*
+3
+;
+>>>>>>> 384056fcc9a9dd74934261b5cf5ca3810a800b73
 }
