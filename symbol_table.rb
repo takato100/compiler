@@ -2,6 +2,7 @@ class STM
 
   Tint = :int
   Tstring = :string
+  Treal = :real
 
   def initialize()
     # name(symbol's name) -> type(symbol type)

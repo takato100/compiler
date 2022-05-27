@@ -5,9 +5,12 @@
   string e;
 
   {
-    int a;
-    a=3;
-
+    real a;
+    int b;
+    real c;
+    b = 3;
+    a=3.5;
+    c =a+b;
   }
   a = 1;
   b=3;

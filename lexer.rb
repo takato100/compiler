@@ -4,7 +4,7 @@ class Lexer
   def initialize(f)
     @srcf = f
     @line = ""
-    @lineno = 1
+    @lineno = 0
   end
 
   def lex()
@@ -39,6 +39,12 @@ class Lexer
     when /\Astring\b/
       yield($&, @lineno)
       token = :string
+    when /\Areal\b/
+      yield($&, @lineno)
+      token = :real
+    when /\A\d+\.\d+/
+      yield($&, @lineno)
+      token = :rnum 
     when /\A\d+/
       yield($&, @lineno)
       token = :num
