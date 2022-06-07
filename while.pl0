@@ -1,0 +1,21 @@
+( INT, 0, 4 )
+( LIT, 0, 0 )
+( STO, 0, 3 )
+// condition
+( LAB, 0, 1 )
+( LOD, 0, 3 )
+( LIT, 0, 10 )
+( OPR, 0, 10 )
+( JPC, 0, 2 )
+// true
+( LOD, 0, 3 )
+// print
+( CSP, 0, 1 )
+// addition
+( LIT, 0, 1 )
+( OPR, 0, 2 )
+( STO, 0, 3 )
+( JMP, 0, 1 )
+// false
+( LAB, 0, 2 )
+( OPR, 0, 0 )
