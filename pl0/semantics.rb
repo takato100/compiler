@@ -2,6 +2,7 @@ class Semantics
 
   def initialize
     @stack = []
+    @label = 0
   end
 
   def getoffset
@@ -37,7 +38,12 @@ class Semantics
       end
       }
       nil
-    end
+  end
+
+  def makeLabel
+    @label += 1
+    return @label
+  end
 
 end
 
