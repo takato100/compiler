@@ -166,7 +166,7 @@ end
 
     when :ident
       # sem
-      ident_offset = @sem_table.searchId(@lexime)
+      ident_offset = @sem_table.searchAll(@lexime)
       if ident_offset == nil then
         puts "semantic error: #{@lexime} not decleared"
       end
@@ -243,7 +243,6 @@ end
 
     essential("whilestmt", :do)
     stmt()
-    stmts()
 
     # jmp to condition
     pl += "(JMP, 0, #{cond_label})"
@@ -339,7 +338,7 @@ end
       essential("factor", :rpar)
     when :ident
       # sem
-      ident_offset = @sem_table.searchId(@lexime)
+      ident_offset = @sem_table.searchAll(@lexime)
       if ident_offset == nil then
         puts "#{@lineno} sem erroor"
       end
