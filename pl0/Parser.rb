@@ -33,12 +33,12 @@ class Parser
     }
   end
 
-  def errormsg(where, given, *expected_token)
-    if expected_token == given || expected_token.include?(given) then
+  def essential(where, *expected)
+    if expected == @token || expected.include?(@token) then
       gettoken()
     else
-      ls = expected_token.join(" or ")
-      puts "error at #{@lineno}::#{where} #{ls} is expected, though #{given} \"#{@lexime}\" is given"
+      ex_ls = expected.join(" or ")
+      puts "error at #{@lineno}::#{where} #{ex_ls} is expected, though #{@token} \"#{@lexime}\" is given"
       exit(1)
     end
   end
@@ -65,24 +65,24 @@ class Parser
 
 
   def fdecl()
-    errormsg("fdecls", @token, :ident)
-    errormsg("fdecls", @token, :lpar)
+    essential("fdecls", :ident)
+    essential("fdecls", :lpar)
     params()
-    errormsg("fdecls", @token, :rpar)
+    essential("fdecls", :rpar)
     body()
   end
 
   def params()
-    errormsg("params", @token, :ident)
+    essential("params", :ident)
     while @token == :comma
       gettoken()
-      errormsg("params", @token, :ident)
+      essential("params", :ident)
     end
   end
 
 
   def main()
-    errormsg("main", @token, :main)
+    essential("main", :main)
     pl = body()
     return pl + "( CSP, 0, 2 )\n( OPR, 0, 0 )\n"
   end
@@ -93,10 +93,10 @@ class Parser
     # semantics
     @sem_table.enterBlock()
 
-    errormsg("body", @token, :lbra)
+    essential("body", :lbra)
     pl_stmt += vardecls()
     pl_stmt += stmts()
-    errormsg("body", @token, :rbra)
+    essential("body", :rbra)
 
     # semantics
     @sem_table.leaveBlock()
@@ -114,21 +114,21 @@ class Parser
   end
 
   def vardecl()
-      errormsg("vardecl", @token, :var)
+      essential("vardecl", :var)
       identlist()
-      errormsg("vardecl", @token, :semi)
+      essential("vardecl", :semi)
 end
 
   def identlist()
     lexime = @lexime
-    errormsg("identlist", @token, :ident)
+    essential("identlist", :ident)
 
     # add the id to semantics table
     @sem_table.enterId(lexime)
 
     while consume("identlist", :comma)
       lexime = @lexime
-      errormsg("identlist", @token, :ident)
+      essential("identlist", :ident)
 
       # add the id to semantics table
       @sem_table.enterId(lexime)
@@ -150,19 +150,19 @@ end
     pl = ""
     case @token
     when :write
-      errormsg("stmt", @token, :write)
+      essential("stmt", :write)
       pl = expression()
-      errormsg("stmt", @token, :semi)
+      essential("stmt", :semi)
     when :writeln
-      errormsg("stmt", @token, :writeln)
-      errormsg("stmt", @token, :semi)
+      essential("stmt", :writeln)
+      essential("stmt", :semi)
       pl = "( CSP, 0, 1 )\n"
 
 
     when :read
-      errormsg("stmt", @token, :read)
-      errormsg("stmt", @token, :ident)
-      errormsg("stmt", @token, :semi)
+      essential("stmt", :read)
+      essential("stmt", :ident)
+      essential("stmt", :semi)
 
     when :ident
       # sem
@@ -171,10 +171,10 @@ end
         puts "semantic error: #{@lexime} not decleared"
       end
 
-      errormsg("stmt", @token, :ident)
-      errormsg("stmt", @token, :coleq)
+      essential("stmt", :ident)
+      essential("stmt", :coleq)
       pl += expression()
-      errormsg("stmt", @token, :semi)
+      essential("stmt", :semi)
 
       # semantics
       pl += "( STO, 0, #{ident_offset} )\n"
@@ -186,11 +186,11 @@ end
     when :lbra
       pl += body()
     when :return
-      errormsg("stmt", @token, :return)
+      essential("stmt", :return)
       expression()
-      errormsg("stmt", @token, :semi)
+      essential("stmt", :semi)
     else
-    errormsg("stmt", @token, :write, :writeln, :read, :ident, :if, :while, :lbra, :return)
+    essential("stmt", :return)
     end
     return pl
   end
@@ -199,7 +199,7 @@ end
     pl = ""
 
     # condition
-    errormsg("if", @token, :if)
+    essential("if", :if)
     pl += condition()
 
     # JPC
@@ -207,7 +207,7 @@ end
     pl += "( JPC, 0, #{else_label} )\n"
 
     # stmt
-    errormsg("then", @token, :then)
+    essential("then", :then)
     pl += stmt()
 
     # jump to fin
@@ -219,8 +219,8 @@ end
       gettoken()
       pl += "( LAB, 0, #{else_label} )\n" + stmt()
     end
-    errormsg("ifstmt", @token, :endif)
-    errormsg("ifstmt", @token, :semi)
+    essential("ifstmt", :endif)
+    essential("ifstmt", :semi)
 
     # if-end label
     pl += "( LAB, 0, #{fin_label} )\n"
@@ -229,9 +229,9 @@ end
   end
 
   def whilestmt()
-    errormsg("whilestmt", @token, :while)
+    essential("whilestmt", :while)
     condition()
-    errormsg("whilestmt", @token, :do)
+    essential("whilestmt", :do)
     stmt()
   end
 
@@ -245,7 +245,7 @@ end
     op = ""
     pl += expression()
     token = @token
-    errormsg("cexp", @token, :eq)
+    essential("cexp", :eq, :neq, :lt, :gt, :leq, :geq)
     case token
     when :eq
       op += "( OPR, 0, 8 )\n"
@@ -283,7 +283,7 @@ end
     when :minus
       op = 3
     end
-    errormsg("po", @token, :plus, :minus)
+    essential("po", :plus, :minus)
     return "( OPR, 0, #{op} )\n"
   end
 
@@ -304,7 +304,7 @@ end
     when :div
       op = "5"
     end
-    errormsg("mop", @token, :mult, :div)
+    essential("mop", :mult, :div)
     return  "( OPR, 0, #{op} )\n"
   end
 
@@ -314,11 +314,11 @@ end
     case @token
     when :number
       pl = "( LIT, 0, #{@lexime} )\n"
-      errormsg("factor", @token, :number)
+      essential("factor", :number)
     when :lpar
-      gettoken()
+      essential("factor", :lpar)
       expression()
-      errormsg("factor", @token, :rpar)
+      essential("factor", :rpar)
     when :ident
       # sem
       ident_offset = @sem_table.searchId(@lexime)
@@ -329,8 +329,9 @@ end
 
       gettoken()
       if @token == :lpar then
+        essential("factor", :lpar)
         aparams()
-        errormsg("factor", @token, :rpar)
+        essential("factor", :rpar)
       end
     end
 
