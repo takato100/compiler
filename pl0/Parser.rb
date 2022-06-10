@@ -33,9 +33,22 @@ class Parser
     }
   end
 
-  def errormsg(where, *expected_token, given)
-    ls = expected_token.join(" or ")
-    puts "error at #{@lineno}::#{where} #{ls} is expected, though #{given} \"#{@lexime}\" is given"
+  def errormsg(where, given, *expected_token)
+    if expected_token == given || expected_token.include?(given) then
+      gettoken()
+    else
+      ls = expected_token.join(" or ")
+      puts "error at #{@lineno}::#{where} #{ls} is expected, though #{given} \"#{@lexime}\" is given"
+      exit(1)
+    end
+  end
+
+  def consume(where, expect)
+    if @token == expect then
+      gettoken()
+      return true
+    end
+    return false
   end
 
   def program()
@@ -52,50 +65,25 @@ class Parser
 
 
   def fdecl()
-    if @token != :ident then
-      errormsg("fdecl", :ident, @token)
-      exit(1)
-    end
-    gettoken()
-    if @token != :lpar then
-      errormsg("fdecls", :lpar, @token)
-      exit(1)
-    end
-    gettoken()
+    errormsg("fdecls", @token, :ident)
+    errormsg("fdecls", @token, :lpar)
     params()
-    if @token != :rpar then
-      errormsg("fdecls", :rpar, @token)
-      exit(1)
-    end
-    gettoken()
+    errormsg("fdecls", @token, :rpar)
     body()
   end
 
   def params()
-    if @token != :ident then
-      errormsg("params", :ident, @token)
-      exit(1)
-    end
-    gettoken()
+    errormsg("params", @token, :ident)
     while @token == :comma
       gettoken()
-      if @token != :ident then
-        errormsg("params", :ident, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("params", @token, :ident)
     end
   end
 
 
   def main()
-    if @token != :main then
-      errormsg("main", :main, @token)
-      exit(1)
-    else
-      gettoken()
-      pl = body()
-    end
+    errormsg("main", @token, :main)
+    pl = body()
     return pl + "( CSP, 0, 2 )\n( OPR, 0, 0 )\n"
   end
 
@@ -105,23 +93,13 @@ class Parser
     # semantics
     @sem_table.enterBlock()
 
-    if @token != :lbra then
-      errormsg("body", :lbra, @token)
-      exit(1)
-    else
-      gettoken()
-      pl_stmt += vardecls()
-      pl_stmt += stmts()
-      if @token != :rbra then
-        errormsg("body", :rbra, @token)
-        exit(1)
-      end
+    errormsg("body", @token, :lbra)
+    pl_stmt += vardecls()
+    pl_stmt += stmts()
+    errormsg("body", @token, :rbra)
 
-      # semantics
-      @sem_table.leaveBlock()
-
-      gettoken()
-    end
+    # semantics
+    @sem_table.leaveBlock()
 
     return pl_stmt
 
@@ -136,41 +114,25 @@ class Parser
   end
 
   def vardecl()
-    if @token != :var then
-      errormsg("vardecl", :var, @token)
-      exit(1)
-    else
-      gettoken()
+      errormsg("vardecl", @token, :var)
       identlist()
-      if @token != :semi then
-        errormsg("vardecl", :semi, @token)
-        exit(1)
-      end
-      gettoken()
-    end
-  end
+      errormsg("vardecl", @token, :semi)
+end
 
   def identlist()
-    if @token != :ident then
-      errormsg("identlist", :ident, @token)
-      exit(1)
-    end
+    lexime = @lexime
+    errormsg("identlist", @token, :ident)
 
     # add the id to semantics table
-    @sem_table.enterId(@lexime)
+    @sem_table.enterId(lexime)
 
-    gettoken()
-    while @token == :comma
-      gettoken()
-      if @token != :ident then
-        errormsg("identlist", :ident, @token)
-        exit(1)
-      end
+    while consume("identlist", :comma)
+      lexime = @lexime
+      errormsg("identlist", @token, :ident)
 
       # add the id to semantics table
-      @sem_table.enterId(@lexime)
+      @sem_table.enterId(lexime)
 
-      gettoken()
     end
   end
 
@@ -188,35 +150,19 @@ class Parser
     pl = ""
     case @token
     when :write
-      gettoken()
+      errormsg("stmt", @token, :write)
       pl = expression()
-      if @token != :semi
-        errormsg("stmt", :semi, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("stmt", @token, :semi)
     when :writeln
-      gettoken()
-      if @token != :semi
-        errormsg("stmt", :semi, @token)
-        exit(1)
-      end
+      errormsg("stmt", @token, :writeln)
+      errormsg("stmt", @token, :semi)
       pl = "( CSP, 0, 1 )\n"
 
-      gettoken()
 
     when :read
-      gettoken()
-      if @token != :ident
-        errormsg("stmt", :ident, @token)
-        exit(1)
-      end
-      gettoken()
-      if @token != :semi
-        errormsg("stmt", :semi, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("stmt", @token, :read)
+      errormsg("stmt", @token, :ident)
+      errormsg("stmt", @token, :semi)
 
     when :ident
       # sem
@@ -225,21 +171,14 @@ class Parser
         puts "semantic error: #{@lexime} not decleared"
       end
 
-      gettoken()
-      if @token != :coleq then
-        errormsg("stmt", :coleq, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("stmt", @token, :ident)
+      errormsg("stmt", @token, :coleq)
       pl += expression()
-      if @token != :semi then
-        errormsg("stmt", :semi, @token)
-      end
+      errormsg("stmt", @token, :semi)
 
       # semantics
       pl += "( STO, 0, #{ident_offset} )\n"
 
-      gettoken()
     when :if
       pl += ifstmt()
     when :while
@@ -247,81 +186,53 @@ class Parser
     when :lbra
       pl += body()
     when :return
-      gettoken()
+      errormsg("stmt", @token, :return)
       expression()
-      if @token != :semi
-        errormsg("stmt", :semi, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("stmt", @token, :semi)
     else
-      errormsg("stmt", [:write, :writeln, :read, :ident, :if, :while, :lbra, :return], @token)
-      exit(1)
+    errormsg("stmt", @token, :write, :writeln, :read, :ident, :if, :while, :lbra, :return)
     end
     return pl
   end
 
   def ifstmt()
     pl = ""
-    if @token != :if
-      errormsg("if", :if, @token)
-      exit(1)
-    else
+
+    # condition
+    errormsg("if", @token, :if)
+    pl += condition()
+
+    # JPC
+    else_label = @sem_table.makeLabel
+    pl += "( JPC, 0, #{else_label} )\n"
+
+    # stmt
+    errormsg("then", @token, :then)
+    pl += stmt()
+
+    # jump to fin
+    fin_label = @sem_table.makeLabel
+    pl += "( JMP, 0, #{fin_label} )\n"
+
+    # else part
+    if @token == :else then
       gettoken()
-      pl += condition()
-      # JPC
-      else_label = @sem_table.makeLabel
-      pl += "( JPC, 0, #{else_label} )\n"
-
-      if @token != :then
-        errormsg("then", :then, @token)
-        exit(1)
-      else
-        gettoken()
-        pl += stmt()
-
-        # jump to fin
-        fin_label = @sem_table.makeLabel
-        pl += "( JMP, 0, #{fin_label} )\n"
-
-        # else
-        if @token == :else then
-          gettoken()
-          pl += "( LAB, 0, #{else_label} )\n" + stmt()
-        end
-        if @token != :endif then
-          errormsg("ifstmt", :endif, @token)
-          exit(1)
-        else
-          gettoken()
-          if @token != :semi then
-            errormsg("ifstmt", :semi, @token)
-            exit(1)
-          end
-          # if fin label
-          pl += "( LAB, 0, #{fin_label} )\n"
-          gettoken()
-        end
-      end
+      pl += "( LAB, 0, #{else_label} )\n" + stmt()
     end
+    errormsg("ifstmt", @token, :endif)
+    errormsg("ifstmt", @token, :semi)
+
+    # if-end label
+    pl += "( LAB, 0, #{fin_label} )\n"
+
     return pl
   end
 
   def whilestmt()
-    if @token != :while
-      errormsg("whilestmt", :while, @token)
-      exit(1)
-    else
-      gettoken()
-      condition()
-      if @token != :do then
-        errormsg("whilestmt", :do, @token)
-        exit(1)
-      else
-        gettoken()
-        stmt()
-      end
-    end
+    errormsg("whilestmt", @token, :while)
+    condition()
+    errormsg("whilestmt", @token, :do)
+    stmt()
   end
 
   def condition()
@@ -333,7 +244,9 @@ class Parser
     pl = ""
     op = ""
     pl += expression()
-    case @token
+    token = @token
+    errormsg("cexp", @token, :eq)
+    case token
     when :eq
       op += "( OPR, 0, 8 )\n"
     when :neq
@@ -346,11 +259,7 @@ class Parser
       op += "( OPR, 0, 11 )\n"
     when :geq
       op += "( OPR, 0, 13 )\n"
-    else
-      errormsg("cexp", [:eq, :neq, :lt, :gt, :leq, :geq], @token)
-      exit(1)
     end
-    gettoken()
     pl += expression()
     return pl + op
   end
@@ -358,6 +267,8 @@ class Parser
   def expression()
     op = ""
     pl = term()
+
+    # maybe rewrite to conusme?
     while @token == :plus || @token == :minus
       op += pop()
       pl += term()
@@ -366,17 +277,13 @@ class Parser
   end
 
   def pop()
-    if @token != :plus and @token != :minus then
-      errormsg("pop", [:plus, :minus], @token)
-      exit(1)
-    end
     case @token
     when :plus
       op = 2
     when :minus
       op = 3
     end
-    gettoken()
+    errormsg("po", @token, :plus, :minus)
     return "( OPR, 0, #{op} )\n"
   end
 
@@ -391,17 +298,13 @@ class Parser
   end
 
   def mop()
-    if @token != :mult && @token != :div
-      errormsg("mop", [:mult, :div], @token)
-      exit(1)
-    end
     case @token
     when :mult
       op = "4"
     when :div
       op = "5"
     end
-    gettoken()
+    errormsg("mop", @token, :mult, :div)
     return  "( OPR, 0, #{op} )\n"
   end
 
@@ -411,15 +314,11 @@ class Parser
     case @token
     when :number
       pl = "( LIT, 0, #{@lexime} )\n"
-      gettoken()
+      errormsg("factor", @token, :number)
     when :lpar
       gettoken()
       expression()
-      if @token != :rpar then
-        errormsg("factor", :rpar, @token)
-        exit(1)
-      end
-      gettoken()
+      errormsg("factor", @token, :rpar)
     when :ident
       # sem
       ident_offset = @sem_table.searchId(@lexime)
@@ -431,16 +330,13 @@ class Parser
       gettoken()
       if @token == :lpar then
         aparams()
-        if @token != :rpar then
-          errormsg("factor",:rpar, @token)
-          exit(1)
-        end
-        gettoken()
+        errormsg("factor", @token, :rpar)
       end
     end
 
     return pl
   end
+
   def aparams()
     expression()
     while @token == :comma
