@@ -229,10 +229,28 @@ end
   end
 
   def whilestmt()
+    pl = ""
     essential("whilestmt", :while)
-    condition()
+
+    # condition
+    cond_label = @sem_talbe.makeLabel
+    pl += "(LAB, 0, #{cond_label})"
+    pl += condition()
+
+    # exit jpc
+    exit_label = @sem_table.makeLabel
+    pl += "( JPC, 0, #{exit_label})"
+
     essential("whilestmt", :do)
     stmt()
+    stmts()
+
+    # jmp to condition
+    pl += "(JMP, 0, #{cond_label})"
+
+    # exit label
+    pl += "( LAB, 0, #{exit_label})"
+    return pl
   end
 
   def condition()
@@ -341,6 +359,7 @@ end
   def aparams()
     expression()
     while @token == :comma
+      essential("aparams", :comma)
       expression()
     end
   end
