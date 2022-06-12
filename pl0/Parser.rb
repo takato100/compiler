@@ -33,6 +33,7 @@ class Parser
     }
   end
 
+  # 引数でblock渡して、それをyieldした後でgettoken()とかイイかも
   def essential(where, *expected)
     if expected == @token || expected.include?(@token) then
       gettoken()
@@ -84,22 +85,33 @@ class Parser
   def main()
     essential("main", :main)
     pl = body()
-    return pl + "( CSP, 0, 2 )\n( OPR, 0, 0 )\n"
+
+    symbol_amount = @sem_table.mem
+    
+    return "( INT, 0, #{symbol_amount} )\n" + pl + "( CSP, 0, 2 )\n( OPR, 0, 0 )\n"
   end
 
   def body()
     pl_stmt = ""
 
     # semantics
-    @sem_table.enterBlock()
+    if @sem_table.stack_length == 0 then
+      @sem_table.enterBlock()
+    else
+      @sem_table.enterInnerBlock()
+    end
 
     essential("body", :lbra)
-    pl_stmt += vardecls()
+    vardecls()
     pl_stmt += stmts()
     essential("body", :rbra)
 
     # semantics
-    @sem_table.leaveBlock()
+    if @sem_table.stack_length == 1 then
+      @sem_table.leaveBlock()
+    else
+      @sem_table.leaveInnerBlock()
+    end
 
     return pl_stmt
 
@@ -109,15 +121,13 @@ class Parser
     while @token == :var
       vardecl()
     end
-    symbol_amount = @sem_table.getoffset
-    return "( INT, 0, #{symbol_amount} )\n"
   end
 
   def vardecl()
-      essential("vardecl", :var)
-      identlist()
-      essential("vardecl", :semi)
-end
+    essential("vardecl", :var)
+    identlist()
+    essential("vardecl", :semi)
+  end
 
   def identlist()
     lexime = @lexime
@@ -339,6 +349,7 @@ end
     when :ident
       # sem
       ident_offset = @sem_table.searchAll(@lexime)
+
       if ident_offset == nil then
         puts "#{@lineno} sem erroor"
       end

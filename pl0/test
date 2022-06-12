@@ -1,0 +1,39 @@
+main{
+  var x,y,z;
+
+  x := 1;
+  y := 1;
+  z := 0;
+
+  if y == 1 then {
+
+    x := 0;
+    y := 2;
+
+  }else
+    x := 0;
+  endif;
+
+  {
+    var x;
+    x := 2;
+
+    write x;
+    writeln;
+    write y;
+    writeln;
+  }
+
+  {
+    var y;
+    y := 3;
+
+    write x;
+    writeln;
+    write y;
+    writeln;
+  }
+
+  write z + 2 * x;
+  writeln;
+}
